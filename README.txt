@@ -1,4 +1,4 @@
-FULL NOTES: https://docs.google.com/document/d/1Q_NR70HKny-0VdmUscXvTJo7P_QwoSlAYGD9yMSWyhc/edit
+FULL NOTES:https://docs.google.com/a/bondgifts.com/document/d/1Q_NR70HKny-0VdmUscXvTJo7P_QwoSlAYGD9yMSWyhc/edit?usp=sharing
 
 ONGOING ISSUES: SNS won’t publish to a FIFO Queue
 
