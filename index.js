@@ -115,7 +115,13 @@ const receiveMessage = (queueURL) => {
 
 /* Recursively performs a function on each item in the queue
    and then removes it, if it keeps getting notifacations. 
-   It will keep going through the queue. */ 
+   It will keep going through the queue.
+
+   Related question: This still seems like polling?
+   There must be a way to call a handler whenever a message is published
+   on the topics.
+*/
+
 const processEntireQueue = (queueURL, cb, continueProcessing) => {
   if (continueProcessing) {
     return receiveMessage(queueURL)
@@ -148,12 +154,12 @@ const doSomethingWithDataAndDelete = (data, queueURL) => {
 
 /* -----------------------------------------------------*/
 
-publishABunchOfDummyMessages()
-.then(() => {
-  processEntireQueue(standardQueueURL, doSomethingWithDataAndDelete, true)
-})
-
 // publishABunchOfDummyMessages()
-// .then(() => receiveMessage(standardQueueURL))
-// .then(data => doSomethingWithData(data))
+// .then(() => {
+//   processEntireQueue(standardQueueURL, doSomethingWithDataAndDelete, true)
+// })
+
+publishABunchOfDummyMessages()
+.then(() => receiveMessage(standardQueueURL))
+.then(data => doSomethingWithData(data))
 
