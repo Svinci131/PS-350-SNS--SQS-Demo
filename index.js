@@ -1,11 +1,12 @@
 const AWS = require('aws-sdk')
+const log = require('./utils').log
+const Promise = require('bluebird');
 const topics = require('./secret.js')
 
 AWS.config.update({'region': 'us-east-1'});
 
 const sns = new AWS.SNS({apiVersion: '2010-03-31'})
 const sqs = new AWS.SQS({apiVersion: '2012-11-05'})
-
 
 /*-----------------------------------------------------
   
@@ -37,9 +38,24 @@ const publish = (sns, message) => {
       if (err) {
         rej(err)
       }
+      data.message = message
       res(data)
     })
   })
+}
+
+const publishABunchOfDummyMessages = (numOfMessages) => {
+  const messages = [publish(sns, 'I am a message 1'),
+                    publish(sns, 'I am a message 2'), 
+                    publish(sns, 'I am a message 3'),
+                    publish(sns, 'I am a message 4'),
+                    publish(sns, 'I am a message 5')]
+
+  return Promise.each(messages, (message) => {
+    console.log('Published:', message.message)
+  })
+  .then(() => log('Posted'))
+  .catch(err => console.log(err))
 }
 
 /*-----------------------------------------------------
@@ -123,36 +139,19 @@ const processEntireQueue = (params, cb, continueProcessing) => {
 -----------------------------------------------------*/
 
 const doSomethingWithData = (data) => {
-  console.log('Got data:', JSON.parse(data.Messages[0].Body).Message)
+  log('Got data:'+ JSON.parse(data.Messages[0].Body).Message)
   return data
 }
 
 const doSomethingWithDataAndDelete = (data) => {
-  console.log('Got data:', JSON.parse(data.Messages[0].Body).Message)
+  log('Got data:'+ JSON.parse(data.Messages[0].Body).Message)
   return deleteMessageFromQueue(data)
 }
 
-/* _______________________________________
-  
-  SYNC EXAMPLE
-  _______________________________________ */
+/* -----------------------------------------------------*/
 
-publish(sns, 'I am a message')
-.then(data => console.log(data, 'publish'))
-.then(() => receiveMessage(MyTopicSubscriberQueueParams))
-.then(data => {
-  if (data && data !== 'No Messages were able to be retrieved') {
-    return doSomethingWithData(data)
-  }
+publishABunchOfDummyMessages()
+.then(() => {
+  processEntireQueue(MyTopicSubscriberQueueParams, doSomethingWithDataAndDelete, true)
 })
-// .then(data => deleteMessageFromQueue(data))
-.catch(err => console.log(err, err.stack))
-
-/* _______________________________________
-  
-  ASYNC EXAMPLE
-  _______________________________________ */
-
-/* processEntireQueue(MyTopicSubscriberQueueParams, doSomethingWithDataAndDelete, true) */
-
 
