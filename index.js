@@ -15,11 +15,6 @@ const sqs = new AWS.SQS({apiVersion: '2012-11-05'})
 
 /* Example Message */
 
-const MyTopicParams = {
-  Message: 'I am a message',
-  TopicArn: topics.myTopic
-}
-
 const createTopic = (sns, name) => {
   return new Promise ((res, rej) => {
     sns.createTopic({
@@ -31,7 +26,12 @@ const createTopic = (sns, name) => {
   })
 }
 
-const publish = (sns, params) => {
+const publish = (sns, message) => {
+  const params = {
+    Message: message,
+    TopicArn: topics.myTopic
+  }
+
   return new Promise ((res, rej) => {
     sns.publish(params, function(err, data) {
       if (err) {
@@ -48,18 +48,18 @@ const publish = (sns, params) => {
 
 -----------------------------------------------------*/
 
-//ADD PERMISSIONS AND CONDITIONS IN FUTURE//
-//http://docs.aws.amazon.com/sns/latest/dg/SendMessageToSQS.html
+/* ADD PERMISSIONS VIA API AND CONDITIONS IN FUTURE */
+/* http://docs.aws.amazon.com/sns/latest/dg/SendMessageToSQS.html */
 
 const queueURL = 'https://sqs.us-east-1.amazonaws.com/488853390436/MyTopicSubscriber'
-const processing = false
+
 /* Example Queue Params */
 
 const MyTopicSubscriberQueueParams = {
   AttributeNames: [
     "SentTimestamp"
   ],
-  MaxNumberOfMessages: 2,
+  MaxNumberOfMessages: 1,
   // ReceiveMessageWaitTimeSeconds: 3,
   QueueUrl: queueURL,
   VisibilityTimeout: 0,
@@ -103,7 +103,6 @@ const receiveMessage = (params) => {
    and then removes it, if it keeps getting notifacations. 
    It will keep going through the queue. */ 
 const processEntireQueue = (params, cb, continueProcessing) => {
-  
   if (continueProcessing) {
     return receiveMessage(params)
     .then(data => {
@@ -113,10 +112,9 @@ const processEntireQueue = (params, cb, continueProcessing) => {
       else return processEntireQueue(params, cb, false)
     })
   }
-  
+
   console.log('Done')
 }
-
 
 /*-----------------------------------------------------
   
@@ -136,28 +134,25 @@ const doSomethingWithDataAndDelete = (data) => {
 
 /* _______________________________________
   
-  SYNC
+  SYNC EXAMPLE
   _______________________________________ */
 
-// publish(sns, MyTopicParams)
-// .then(data => console.log(data, 'publish'))
-// .then(() => receiveMessage(MyTopicSubscriberQueueParams))
-// .then(data => {
-//   if (data && data !== 'No Messages were able to be retrieved') {
-//     return doSomethingWithData(data)
-//   }
-// })
-// // .then(data => deleteMessageFromQueue(data))
-// .catch(err => console.log(err, err.stack))
+publish(sns, 'I am a message')
+.then(data => console.log(data, 'publish'))
+.then(() => receiveMessage(MyTopicSubscriberQueueParams))
+.then(data => {
+  if (data && data !== 'No Messages were able to be retrieved') {
+    return doSomethingWithData(data)
+  }
+})
+// .then(data => deleteMessageFromQueue(data))
+.catch(err => console.log(err, err.stack))
 
 /* _______________________________________
   
-  ASYNC
+  ASYNC EXAMPLE
   _______________________________________ */
 
-// publish(sns, MyTopicParams)
-// publish(sns, MyTopicParams)
-// publish(sns, MyTopicParams)
-processEntireQueue(MyTopicSubscriberQueueParams, doSomethingWithDataAndDelete, true)
+/* processEntireQueue(MyTopicSubscriberQueueParams, doSomethingWithDataAndDelete, true) */
 
 
