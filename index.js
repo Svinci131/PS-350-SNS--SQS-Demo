@@ -67,22 +67,9 @@ const publishABunchOfDummyMessages = (numOfMessages) => {
 /* ADD PERMISSIONS VIA API AND CONDITIONS IN FUTURE */
 /* http://docs.aws.amazon.com/sns/latest/dg/SendMessageToSQS.html */
 
-const queueURL = 'https://sqs.us-east-1.amazonaws.com/488853390436/MyTopicSubscriber'
+const standardQueueURL = 'https://sqs.us-east-1.amazonaws.com/488853390436/MyTopicSubscriber'
 
-/* Example Queue Params */
-
-const MyTopicSubscriberQueueParams = {
-  AttributeNames: [
-    "SentTimestamp"
-  ],
-  MaxNumberOfMessages: 1,
-  // ReceiveMessageWaitTimeSeconds: 3,
-  QueueUrl: queueURL,
-  VisibilityTimeout: 0,
-  WaitTimeSeconds: 0
-}
-
-const deleteMessageFromQueue = (data) => {
+const deleteMessageFromQueue = (data, queueURL) => {
 
   const deleteParams = {
     QueueUrl: queueURL,
@@ -103,7 +90,18 @@ const deleteMessageFromQueue = (data) => {
 
 }
 
-const receiveMessage = (params) => {
+const receiveMessage = (queueURL) => {
+  const params = {
+    AttributeNames: [
+      "SentTimestamp"
+    ],
+    MaxNumberOfMessages: 1,
+    // ReceiveMessageWaitTimeSeconds: 3,
+    QueueUrl: queueURL,
+    VisibilityTimeout: 0,
+    WaitTimeSeconds: 0
+  }
+
   return new Promise((res, rej) => {
     sqs.receiveMessage(params, (err, data) => {
       if (err) rej(err)
@@ -118,14 +116,14 @@ const receiveMessage = (params) => {
 /* Recursively performs a function on each item in the queue
    and then removes it, if it keeps getting notifacations. 
    It will keep going through the queue. */ 
-const processEntireQueue = (params, cb, continueProcessing) => {
+const processEntireQueue = (queueURL, cb, continueProcessing) => {
   if (continueProcessing) {
-    return receiveMessage(params)
+    return receiveMessage(queueURL)
     .then(data => {
       if (data !== 'No Messages were able to be retrieved') {
-        return cb(data).then(() => processEntireQueue(params, cb, true))
+        return cb(data, queueURL).then(() => processEntireQueue(queueURL, cb, true))
       }
-      else return processEntireQueue(params, cb, false)
+      else return processEntireQueue(queueURL, cb, false)
     })
   }
 
@@ -143,15 +141,19 @@ const doSomethingWithData = (data) => {
   return data
 }
 
-const doSomethingWithDataAndDelete = (data) => {
+const doSomethingWithDataAndDelete = (data, queueURL) => {
   log('Got data:'+ JSON.parse(data.Messages[0].Body).Message)
-  return deleteMessageFromQueue(data)
+  return deleteMessageFromQueue(data, queueURL)
 }
 
 /* -----------------------------------------------------*/
 
 publishABunchOfDummyMessages()
 .then(() => {
-  processEntireQueue(MyTopicSubscriberQueueParams, doSomethingWithDataAndDelete, true)
+  processEntireQueue(standardQueueURL, doSomethingWithDataAndDelete, true)
 })
+
+// publishABunchOfDummyMessages()
+// .then(() => receiveMessage(standardQueueURL))
+// .then(data => doSomethingWithData(data))
 
